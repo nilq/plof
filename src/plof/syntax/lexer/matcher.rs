@@ -6,8 +6,8 @@ macro_rules! token {
         token!($tokenizer , TokenType::$token_type, $accum)
     }};
     ($tokenizer:expr, $token_type:expr, $accum:expr) => {{
-        let tokenizer = $tokenizer as &$crate::xxx::syntax::lexer::Tokenizer;
-        let token_type = $token_type as $crate::xxx::syntax::lexer::token::TokenType;
+        let tokenizer = $tokenizer as &$crate::plof::syntax::lexer::Tokenizer;
+        let token_type = $token_type as $crate::plof::syntax::lexer::token::TokenType;
         Some(Token::new(token_type, tokenizer.last_position(), $accum))
     }};
 }

@@ -12,7 +12,7 @@ say 'hey world'
 
 ### literals
 
-string
+str
 ```
 "hey"
 r"raw hey"
