@@ -6,10 +6,10 @@ use syntax::parser::{Traveler, Parser};
 
 fn main() {
     let test = r#"
-    str a = "hey"
-    any a = "hey"
-    num a = 1 + 214
-    bool a = true or false
+str (str a, str b) = a ++ b
+
+num (num a, num b) add =
+  1 + 1
     "#;
 
     let mut blocks = BlockTree::new(test, 0);
@@ -18,7 +18,7 @@ fn main() {
     let root = blocks.tree(&indents);
     let done = process_branch(&root);
 
-    println!("#{:#?}\n------", done);
+    println!("#{:#?}\n------{}\n------", done, test);
 
     let mut parser = Parser::new(Traveler::new(done.clone()));
 

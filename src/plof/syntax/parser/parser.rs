@@ -78,6 +78,76 @@ impl Parser {
                         Ok(Expression::Assignment(Some(retty), Rc::new(id), Rc::new(try!(self.expression()))))
                     },
 
+                    TokenType::Symbol => match self.traveler.current_content().as_str() {
+                        "(" => {
+                            self.traveler.next();
+
+                            let mut parameters = Vec::new();
+
+                            while self.traveler.current_content() != ")" {
+                                let mut t: Option<Type> = None;
+
+                                match self.traveler.current().token_type {
+                                    TokenType::Type => {
+                                        t = Some(get_type(&self.traveler.current_content()).unwrap());
+                                        self.traveler.next();
+                                    },
+
+                                    TokenType::Identifier => (),
+
+                                    TokenType::Symbol => match self.traveler.current_content().as_str() {
+                                        "," => (),
+                                        _   => return Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected: {}", self.traveler.current_content()))),
+                                    },
+
+                                    _ => return Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected: {}", self.traveler.current_content()))),
+                                }
+
+                                if self.traveler.current_content() == "," {
+                                    self.traveler.next();
+                                } else {
+                                    let id = Rc::new(try!(self.traveler.expect(TokenType::Identifier)));
+                                    self.traveler.next();
+
+                                    parameters.push((t, id));
+                                }
+                            }
+
+                            self.traveler.next(); // skips closing ')'
+
+                            let mut name = None;
+
+                            if self.traveler.current().token_type == TokenType::Identifier {
+                                name = Some(Rc::new(self.traveler.current_content()));
+                                self.traveler.next();
+                            }
+
+                            try!(self.traveler.expect_content("="));
+
+                            self.traveler.next();
+
+                            let body: Rc<Expression>;
+
+                            match self.traveler.current_content().as_str() {
+                                "\n" => {
+                                    self.traveler.next();
+                                    body = Rc::new(Expression::Block(Rc::new(try!(self.block()))));
+
+                                },
+                                _    => body = Rc::new(try!(self.expression())),
+                            }
+
+                            Ok(Expression::Lambda {
+                                name,
+                                retty,
+                                parameters,
+                                body,
+                            })
+                        },
+
+                        _ => Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected: {}", self.traveler.current_content()))),
+                    },
+
                     _ => Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected: {}", self.traveler.current_content()))),
                 }
             },
