@@ -10,6 +10,7 @@ pub enum Expression {
     Identifier(Rc<String>),
     BoolLiteral(bool),
     Assignment(Option<Type>, Rc<String>, Rc<Expression>),
+    Call(Rc<Expression>, Rc<Vec<Expression>>),
     Lambda {
         name:       Option<Rc<String>>,
         retty:      Type,
@@ -32,7 +33,7 @@ pub enum Statement {
 
 #[derive(Debug, Clone)]
 pub enum Type {
-    Str, Num, Bool, Any, Nil, Other(i32),
+    Str, Num, Bool, Any, Nil,
 }
 
 pub fn get_type(v: &str) -> Option<Type> {
