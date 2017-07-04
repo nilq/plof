@@ -92,7 +92,44 @@ impl Parser {
             },
 
             TokenType::Symbol => match self.traveler.current_content().as_str() {
-                "," => { // bad hack here
+                "(" => {
+                    self.traveler.next();
+                    let expr = try!(self.expression());
+                    self.traveler.next();
+                    try!(self.traveler.expect_content(")"));
+
+                    self.traveler.next();
+
+                    match self.traveler.current().token_type {
+                        TokenType::IntLiteral |
+                        TokenType::FloatLiteral |
+                        TokenType::BoolLiteral |
+                        TokenType::StringLiteral |
+                        TokenType::Identifier |
+                        TokenType::Symbol => {
+                            if self.traveler.current().token_type == TokenType::Symbol {
+                                match self.traveler.current_content().as_str() {
+                                    "(" => (),
+                                    _   => return Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected: {}", self.traveler.current_content()))),
+                                }
+                            }
+
+                            let call = try!(self.call(expr));
+
+                            self.traveler.next();
+
+                            return Ok(call)
+                        },
+
+                        _ => (),
+                    }
+
+                    self.traveler.prev();
+
+                    Ok(expr)
+                },
+
+                "," | ")" => { // bad hack here
                     self.traveler.next();
                     return self.term()
                 },
