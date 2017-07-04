@@ -11,6 +11,7 @@ pub enum TokenType {
     Operator,
     Identifier,
     Keyword,
+    Type,
     Whitespace,
     EOL,
     EOF,

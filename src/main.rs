@@ -2,11 +2,14 @@ mod plof;
 
 use plof::syntax;
 use syntax::lexer::{BlockTree, process_branch};
+use syntax::parser::{Traveler, Parser};
 
 fn main() {
     let test = r#"
-str (str name) greet =
-  say "yes hello, " ++ name
+    str a = "hey"
+    any a = "hey"
+    num a = 1 + 214
+    bool a = true or false
     "#;
 
     let mut blocks = BlockTree::new(test, 0);
@@ -15,5 +18,14 @@ str (str name) greet =
     let root = blocks.tree(&indents);
     let done = process_branch(&root);
 
-    println!("{:#?}", done)
+    println!("#{:#?}\n------", done);
+
+    let mut parser = Parser::new(Traveler::new(done.clone()));
+
+    match parser.parse() {
+        Err(why)  => println!("error: {}", why),
+        Ok(stuff) => {
+            println!("{:#?}", stuff);
+        },
+    }
 }

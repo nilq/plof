@@ -21,6 +21,7 @@ pub fn lexer(data: &mut Chars) -> Lexer {
         "}",
         "!",
         "|",
+        "=",
         ".",
     ].iter().map(|&x| x.to_string()).collect();
 
@@ -39,18 +40,16 @@ pub fn lexer(data: &mut Chars) -> Lexer {
         "<=",
         "==",
         "!=",
-        "=",
-        "!",
         "and",
         "or",
     ].iter().map(|&x| x.to_string()).collect();
 
     let keywords = vec![
-        "if", "else", "elif",
+        "if", "else", "elif", "unless",
     ].iter().map(|&x| x.to_string()).collect();
 
     let types = vec![
-        "num", "str", "bool", "any", "nil"
+        "num", "str", "any", "bool",
     ].iter().map(|&x| x.to_string()).collect();
 
     let boolean = vec![
@@ -58,11 +57,11 @@ pub fn lexer(data: &mut Chars) -> Lexer {
         "false",
     ].iter().map(|&x| x.to_string()).collect();
 
+    let matcher_types          = ConstantMatcher::new(TokenType::Type, types);
     let matcher_symbol         = ConstantMatcher::new(TokenType::Symbol, symbols);
     let matcher_operator       = ConstantMatcher::new(TokenType::Operator, operators);
-    let matcher_types          = KeyMatcher::new(TokenType::Keyword, types);
-    let matcher_keyword        = KeyMatcher::new(TokenType::Keyword, keywords);
-    let matcher_boolean        = KeyMatcher::new(TokenType::BoolLiteral, boolean);
+    let matcher_keyword        = ConstantMatcher::new(TokenType::Keyword, keywords);
+    let matcher_boolean        = ConstantMatcher::new(TokenType::BoolLiteral, boolean);
     let matcher_whitespace     = WhitespaceMatcher {};
     let matcher_int_literal    = IntLiteralMatcher {};
     let matcher_float_literal  = FloatLiteralMatcher {};
@@ -73,8 +72,8 @@ pub fn lexer(data: &mut Chars) -> Lexer {
     lexer.matchers_mut().push(Rc::new(matcher_float_literal));
     lexer.matchers_mut().push(Rc::new(matcher_int_literal));
     lexer.matchers_mut().push(Rc::new(matcher_string_literal));
-    lexer.matchers_mut().push(Rc::new(matcher_boolean));
     lexer.matchers_mut().push(Rc::new(matcher_types));
+    lexer.matchers_mut().push(Rc::new(matcher_boolean));
     lexer.matchers_mut().push(Rc::new(matcher_keyword));
     lexer.matchers_mut().push(Rc::new(matcher_symbol));
     lexer.matchers_mut().push(Rc::new(matcher_operator));

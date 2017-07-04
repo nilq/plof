@@ -1,5 +1,4 @@
 use std::rc::Rc;
-use std::fmt;
 
 use super::{ParserResult, ParserError};
 
@@ -10,6 +9,13 @@ pub enum Expression {
     StringLiteral(Rc<String>),
     Identifier(Rc<String>),
     BoolLiteral(bool),
+    Assignment(Option<Type>, Rc<String>, Rc<Expression>),
+    Lambda {
+        name:       Option<Rc<String>>,
+        retty:      Type,
+        parameters: Vec<(Option<Type>, Rc<String>)>,
+        body:       Rc<Expression>,
+    },
     Nil,
     EOF,
     Operation {
@@ -25,6 +31,22 @@ pub enum Statement {
 }
 
 #[derive(Debug, Clone)]
+pub enum Type {
+    Str, Num, Bool, Any, Nil, Other(i32),
+}
+
+pub fn get_type(v: &str) -> Option<Type> {
+    match v {
+        "str"  => Some(Type::Str),
+        "num"  => Some(Type::Num),
+        "bool" => Some(Type::Bool),
+        "any"  => Some(Type::Any),
+        "nil"  => Some(Type::Nil),
+        _      => None,
+    }
+}
+
+#[derive(Debug, Clone)]
 pub enum Operand {
     Pow,
     Mul, Div, Mod,
@@ -35,7 +57,7 @@ pub enum Operand {
     Append,
 }
 
-pub fn operand(v: &str) -> Option<(Operand, u8)> {
+pub fn get_operand(v: &str) -> Option<(Operand, u8)> {
     match v {
         "^"   => Some((Operand::Pow, 0)),
         "*"   => Some((Operand::Mul, 1)),
