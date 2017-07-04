@@ -72,7 +72,8 @@ impl Parser {
                         if self.traveler.current().token_type == TokenType::Symbol {
                             match self.traveler.current_content().as_str() {
                                 "(" => (),
-                                _   => return Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected: {}", self.traveler.current_content()))),
+                                ")" => (),
+                                _   => return Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected here: {}", self.traveler.current_content()))),
                             }
                         }
 
@@ -95,7 +96,7 @@ impl Parser {
                 "(" => {
                     self.traveler.next();
                     let expr = try!(self.expression());
-                    self.traveler.next();
+                    self.traveler.prev();
                     try!(self.traveler.expect_content(")"));
 
                     self.traveler.next();
@@ -110,7 +111,7 @@ impl Parser {
                             if self.traveler.current().token_type == TokenType::Symbol {
                                 match self.traveler.current_content().as_str() {
                                     "(" => (),
-                                    _   => return Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected: {}", self.traveler.current_content()))),
+                                    _   => return Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected here: {}", self.traveler.current_content()))),
                                 }
                             }
 

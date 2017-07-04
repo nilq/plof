@@ -6,7 +6,7 @@ use syntax::parser::{Traveler, Parser};
 
 fn main() {
     let test = r#"
-add1 ((1 + 2) * 2) 10
+numa
     "#;
 
     let mut blocks = BlockTree::new(test, 0);

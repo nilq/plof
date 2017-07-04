@@ -57,11 +57,11 @@ pub fn lexer(data: &mut Chars) -> Lexer {
         "false",
     ].iter().map(|&x| x.to_string()).collect();
 
-    let matcher_types          = ConstantMatcher::new(TokenType::Type, types);
+    let matcher_types          = KeyMatcher::new(TokenType::Type, types);
     let matcher_symbol         = ConstantMatcher::new(TokenType::Symbol, symbols);
     let matcher_operator       = ConstantMatcher::new(TokenType::Operator, operators);
-    let matcher_keyword        = ConstantMatcher::new(TokenType::Keyword, keywords);
-    let matcher_boolean        = ConstantMatcher::new(TokenType::BoolLiteral, boolean);
+    let matcher_keyword        = KeyMatcher::new(TokenType::Keyword, keywords);
+    let matcher_boolean        = KeyMatcher::new(TokenType::BoolLiteral, boolean);
     let matcher_whitespace     = WhitespaceMatcher {};
     let matcher_int_literal    = IntLiteralMatcher {};
     let matcher_float_literal  = FloatLiteralMatcher {};

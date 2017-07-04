@@ -217,7 +217,7 @@ impl Matcher for ConstantMatcher {
         for constant in self.constants.clone() {
             let dat = tokenizer.clone().take(constant.len());
             if dat.size_hint().1.unwrap() != constant.len() {
-                return None;
+                return None
             }
             if dat.collect::<String>() == constant {
                 tokenizer.advance(constant.len());
@@ -230,32 +230,33 @@ impl Matcher for ConstantMatcher {
 
 pub struct KeyMatcher {
     token_type: TokenType,
-    keys: Vec<String>,
+    constants: Vec<String>,
 }
 
 impl KeyMatcher {
-    pub fn new(token_type: TokenType, keys: Vec<String>) -> Self {
+    pub fn new(token_type: TokenType, constants: Vec<String>) -> Self {
         KeyMatcher {
-            token_type: token_type,
-            keys: keys,
+            token_type,
+            constants,
         }
     }
 }
 
 impl Matcher for KeyMatcher {
     fn try_match(&self, tokenizer: &mut Tokenizer) -> Option<Token> {
-        for key in self.keys.clone() {
-            let dat = tokenizer.clone().take(key.len());
-            if dat.size_hint().1.unwrap() != key.len() {
-                return None;
+        for constant in self.constants.clone() {
+            let dat = tokenizer.clone().take(constant.len());
+            if dat.size_hint().1.unwrap() != constant.len() {
+                return None
             }
+            if dat.collect::<String>() == constant {
+                let current = *tokenizer.clone().peek_n(constant.len()).unwrap();
+                if "_@?'".contains(current) || current.is_alphanumeric() {
+                    return None
+                }
 
-            match tokenizer.clone().peek_n(dat.size_hint().1.unwrap()) {
-                Some(c) if c.is_digit(10) || c.is_alphabetic() => return None,
-                _ => if dat.collect::<String>() == key {
-                    tokenizer.advance(key.len());
-                    return token!(tokenizer, self.token_type.clone(), key)
-                },
+                tokenizer.advance(constant.len());
+                return token!(tokenizer, self.token_type.clone(), constant)
             }
         }
         None
