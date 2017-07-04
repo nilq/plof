@@ -8,7 +8,8 @@ fn main() {
     let test = r#"
 any (a, b) add = a + b
 
-add 1, 2
+add 1, 2, add 1, 4
+add add add add add add
     "#;
 
     let mut blocks = BlockTree::new(test, 0);
