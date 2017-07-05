@@ -12,10 +12,10 @@ pub struct Env {
 }
 
 impl Env {
-    pub fn new(parent: Rc<Env>, types: &[Type]) -> Env {
+    pub fn new(parent: Rc<Env>, types: &Vec<Type>) -> Env {
         Env {
             parent: Some(parent),
-            types: RefCell::new(types.to_vec()),
+            types: RefCell::new(types.clone()),
         }
     }
 
@@ -70,10 +70,25 @@ impl Env {
         }
     }
 
+    pub fn visualize(&self, env_index: usize) {
+        if env_index > 0 {
+            if let Some(ref p) = self.parent {
+                p.visualize(env_index - 1);
+                println!("------------------------------");
+            }
+        }
+
+        for (i, v) in self.types.borrow().iter().enumerate() {
+            println!("({} : {}) = {:?}", i, env_index, v)
+        }
+    }
+
     fn dump(&self, f: &mut fmt::Formatter, env_index: usize) -> fmt::Result {
-        if let Some(ref p) = self.parent {
-            try!(p.dump(f, env_index - 1));
-            try!(writeln!(f, "------------------------------"));
+        if env_index > 0 {
+            if let Some(ref p) = self.parent {
+                try!(p.dump(f, env_index - 1));
+                try!(writeln!(f, "------------------------------"));
+            }
         }
 
         for (i, v) in self.types.borrow().iter().enumerate() {

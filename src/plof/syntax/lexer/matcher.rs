@@ -220,6 +220,7 @@ impl Matcher for ConstantMatcher {
                 return None
             }
             if dat.collect::<String>() == constant {
+                println!("{}", constant);
                 tokenizer.advance(constant.len());
                 return token!(tokenizer, self.token_type.clone(), constant)
             }
@@ -250,7 +251,8 @@ impl Matcher for KeyMatcher {
                 return None
             }
             if dat.collect::<String>() == constant {
-                let current = *tokenizer.clone().peek_n(constant.len()).unwrap();
+                let current = *tokenizer.peek_n(constant.len()).unwrap();
+
                 if "_@?'".contains(current) || current.is_alphanumeric() {
                     return None
                 }

@@ -68,7 +68,7 @@ impl Traveler {
         }
     }
 
-    pub fn expecte_contents(&self, sequence: Vec<String>) -> Result<Vec<&Token>, String> {
+    pub fn expect_contents(&self, sequence: Vec<String>) -> Result<Vec<&Token>, String> {
         let mut accum: usize = 0;
 
         let mut res = Vec::new();

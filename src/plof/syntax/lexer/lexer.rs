@@ -60,8 +60,8 @@ pub fn lexer(data: &mut Chars) -> Lexer {
     let matcher_types          = KeyMatcher::new(TokenType::Type, types);
     let matcher_symbol         = ConstantMatcher::new(TokenType::Symbol, symbols);
     let matcher_operator       = ConstantMatcher::new(TokenType::Operator, operators);
-    let matcher_keyword        = KeyMatcher::new(TokenType::Keyword, keywords);
     let matcher_boolean        = KeyMatcher::new(TokenType::BoolLiteral, boolean);
+    let matcher_keyword        = KeyMatcher::new(TokenType::Keyword, keywords);
     let matcher_whitespace     = WhitespaceMatcher {};
     let matcher_int_literal    = IntLiteralMatcher {};
     let matcher_float_literal  = FloatLiteralMatcher {};
@@ -73,10 +73,10 @@ pub fn lexer(data: &mut Chars) -> Lexer {
     lexer.matchers_mut().push(Rc::new(matcher_int_literal));
     lexer.matchers_mut().push(Rc::new(matcher_string_literal));
     lexer.matchers_mut().push(Rc::new(matcher_types));
+    lexer.matchers_mut().push(Rc::new(matcher_operator));
+    lexer.matchers_mut().push(Rc::new(matcher_symbol));
     lexer.matchers_mut().push(Rc::new(matcher_boolean));
     lexer.matchers_mut().push(Rc::new(matcher_keyword));
-    lexer.matchers_mut().push(Rc::new(matcher_symbol));
-    lexer.matchers_mut().push(Rc::new(matcher_operator));
     lexer.matchers_mut().push(Rc::new(matcher_identifier));
     lexer
 }

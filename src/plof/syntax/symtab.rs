@@ -56,10 +56,25 @@ impl SymTab {
         }
     }
 
+    pub fn visualize(&self, env_index: usize) {
+        if env_index > 0 {
+            if let Some(ref p) = self.parent {
+                p.visualize(env_index - 1);
+                println!("------------------------------");
+            }
+        }
+
+        for (i, v) in self.names.borrow().iter().enumerate() {
+            println!("({} : {}) = {:?}", i, env_index, v)
+        }
+    }
+
     fn dump(&self, f: &mut fmt::Formatter, env_index: usize) -> fmt::Result {
-        if let Some(ref p) = self.parent {
-            try!(p.dump(f, env_index - 1));
-            try!(writeln!(f, "------------------------------"));
+        if env_index > 0 {
+            if let Some(ref p) = self.parent {
+                try!(p.dump(f, env_index - 1));
+                try!(writeln!(f, "------------------------------"));
+            }
         }
 
         for (i, v) in self.names.borrow().iter().enumerate() {
@@ -71,7 +86,7 @@ impl SymTab {
 }
 
 impl fmt::Debug for SymTab {
-    fn fmt(&self, f : &mut fmt::Formatter) -> Result<(), fmt::Error> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         try!(self.dump(f, 0));
         Ok(())
     }

@@ -8,15 +8,9 @@ use std::rc::Rc;
 
 fn main() {
     let test = r#"
-str a  = "hey, " ++ "world"
-bool b = 10
-num c  = 1 + 1
-any d  = a ++ c
-
-a
-b
-c
-d
+str (str a, str b) concat = a ++ b
+str (a, b) add = a + b
+str (a) add1 = a ++ " hello"
     "#;
 
     let mut blocks = BlockTree::new(test, 0);
@@ -38,7 +32,13 @@ d
             println!("{:#?}\n------", stuff);
 
             for s in stuff.iter() {
-                s.visit(&symtab, &env);
+                match s.visit(&symtab, &env) {
+                    Ok(()) => (),
+                    Err(e) => {
+                        println!("{}", e);
+                        return
+                    },
+                }
             }
 
             println!("------\n{:?}", env);

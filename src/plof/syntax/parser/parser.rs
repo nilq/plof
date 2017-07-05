@@ -159,14 +159,15 @@ impl Parser {
                         "(" => {
                             self.traveler.next();
 
-                            let mut parameters = Vec::new();
+                            let mut param_names = Vec::new();
+                            let mut param_types = Vec::new();
 
                             while self.traveler.current_content() != ")" {
-                                let mut t: Option<Type> = None;
+                                let mut t: Type = Type::Any;
 
                                 match self.traveler.current().token_type {
                                     TokenType::Type => {
-                                        t = Some(get_type(&self.traveler.current_content()).unwrap());
+                                        t = get_type(&self.traveler.current_content()).unwrap();
                                         self.traveler.next();
                                     },
 
@@ -186,7 +187,8 @@ impl Parser {
                                     let id = Rc::new(try!(self.traveler.expect(TokenType::Identifier)));
                                     self.traveler.next();
 
-                                    parameters.push((t, id));
+                                    param_names.push(id);
+                                    param_types.push(t);
                                 }
                             }
 
@@ -217,7 +219,8 @@ impl Parser {
                             Ok(Expression::Lambda {
                                 name,
                                 retty,
-                                parameters,
+                                param_names,
+                                param_types,
                                 body,
                             })
                         },

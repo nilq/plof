@@ -15,7 +15,8 @@ pub enum Expression {
     Lambda {
         name:       Option<Rc<String>>,
         retty:      Type,
-        parameters: Vec<(Option<Type>, Rc<String>)>,
+        param_names: Vec<Rc<String>>,
+        param_types: Vec<Type>,
         body:       Rc<Expression>,
     },
     Nil,
@@ -52,6 +53,34 @@ impl Expression {
                 if let Err(e) = env.set_type(index, 0, tp) {
                     panic!("error setting type: {}", e)
                 }
+
+                Ok(())
+            },
+
+            Expression::Lambda {
+                ref name, ref retty, ref param_names, ref param_types, ref body,
+            } => {
+                if let &Some(ref n) = name {
+                    match sym.get_name(&n) {
+                        Some((_, _)) => return Err(ParserError::new(&format!("can't redefine lambda '{}'!", n))),
+                        None => {
+                            let index = sym.add_name(&n);
+                            if index >= env.size() {
+                                env.grow();
+                            }
+                        },
+                    }
+                }
+
+                let local_sym = Rc::new(SymTab::new(sym.clone(), &param_names));
+                let local_env = Rc::new(Env::new(env.clone(), &param_types));
+
+                println!("lambda: {:?} of type {:?}:\n", name.clone().unwrap(), retty);
+
+                local_sym.visualize(1);
+                local_env.visualize(1);
+
+                println!("\n");
 
                 Ok(())
             },
