@@ -220,7 +220,6 @@ impl Matcher for ConstantMatcher {
                 return None
             }
             if dat.collect::<String>() == constant {
-                println!("{}", constant);
                 tokenizer.advance(constant.len());
                 return token!(tokenizer, self.token_type.clone(), constant)
             }

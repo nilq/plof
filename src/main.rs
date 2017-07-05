@@ -8,9 +8,8 @@ use std::rc::Rc;
 
 fn main() {
     let test = r#"
-str (str a, str b) concat = a ++ b
-str (a, b) add = a + b
-str (a) add1 = a ++ " hello"
+a = 10
+b = "hey"
     "#;
 
     let mut blocks = BlockTree::new(test, 0);
@@ -23,8 +22,8 @@ str (a) add1 = a ++ " hello"
 
     let mut parser = Parser::new(Traveler::new(done.clone()));
 
-    let mut symtab = Rc::new(syntax::SymTab::new_global());
-    let mut env    = Rc::new(syntax::Env::new_global());
+    let symtab = Rc::new(syntax::SymTab::new_global());
+    let env    = Rc::new(syntax::Env::new_global());
 
     match parser.parse() {
         Err(why)  => println!("error: {}", why),

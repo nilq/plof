@@ -10,7 +10,7 @@ pub enum Expression {
     StringLiteral(Rc<String>),
     Identifier(Rc<String>),
     BoolLiteral(bool),
-    Assignment(Option<Type>, Rc<String>, Rc<Expression>),
+    Definition(Option<Type>, Rc<String>, Rc<Expression>),
     Call(Rc<Expression>, Rc<Vec<Expression>>),
     Lambda {
         name:       Option<Rc<String>>,
@@ -39,16 +39,30 @@ impl Expression {
                 None => Err(ParserError::new(&format!("use of undeclared: {}", id))),
             },
 
-            Expression::Assignment(ref t, ref name, ref expr) => {
+            Expression::Definition(ref t, ref name, ref expr) => {
+                let tp = match *t {
+                    Some(ref id) => id.clone(),
+                    None         => try!(expr.get_type(sym, env)),
+                };
+
+                match sym.get_name(&name) {
+                    Some((i, env_index)) => {
+                        match env.get_type(i, env_index) {
+                            Ok(tp2)  => if tp2 != tp {
+                                println!("angery potential bad typing")
+                            } else {
+                                println!("might be okok")
+                            },
+                            Err(e) => return Err(ParserError::new(&format!("{}", e))),
+                        }
+                    },
+                    None => (),
+                }
+
                 let index = sym.add_name(name);
                 if index >= env.size() {
                     env.grow();
                 }
-
-                let tp = match *t {
-                    Some(ref id) => id.clone(),
-                    None         => Type::Any,
-                };
 
                 if let Err(e) = env.set_type(index, 0, tp) {
                     panic!("error setting type: {}", e)
@@ -88,6 +102,24 @@ impl Expression {
             ref c => Err(ParserError::new(&format!("undefined visitor: {:?}", c))),
         }
     }
+
+    pub fn get_type(&self, sym: &Rc<SymTab>, env: &Rc<Env>) -> ParserResult<Type> {
+        match *self {
+            Expression::NumberLiteral(_)  => Ok(Type::Num),
+            Expression::StringLiteral(_)  => Ok(Type::Str),
+            Expression::BoolLiteral(_)    => Ok(Type::Bool),
+            Expression::Identifier(ref n) => match sym.get_name(&*n) {
+                Some((i, env_index)) => {
+                    Ok(env.get_type(i, env_index).unwrap())
+                },
+                None => Err(ParserError::new(&format!("can't get type of undeclared: {}", n))),
+            },
+
+
+
+            _ => Ok(Type::Undefined),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -103,7 +135,7 @@ impl Statement {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Type {
     Str, Num, Bool, Any, Nil, Undefined,
 }

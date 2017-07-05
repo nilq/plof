@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use super::*;
-use super::{ParserError, ParserErrorValue};
+use super::ParserError;
 
 use super::lexer::TokenType;
 
@@ -60,6 +60,8 @@ impl Parser {
             TokenType::StringLiteral => Ok(Expression::StringLiteral(Rc::new(self.traveler.current_content().clone()))),
             TokenType::Identifier    => {
                 let id = Expression::Identifier(Rc::new(self.traveler.current_content()));
+                let name = Rc::new(self.traveler.current_content());
+
                 self.traveler.next();
 
                 match self.traveler.current().token_type {
@@ -72,6 +74,11 @@ impl Parser {
                         if self.traveler.current().token_type == TokenType::Symbol {
                             match self.traveler.current_content().as_str() {
                                 "(" | ")" => (),
+                                "="       => {
+                                    self.traveler.next();
+
+                                    return Ok(Expression::Definition(None, name, Rc::new(try!(self.expression()))))
+                                },
                                 _   => return Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected here: {}", self.traveler.current_content()))),
                             }
                         }
@@ -152,7 +159,7 @@ impl Parser {
 
                         self.traveler.next();
 
-                        Ok(Expression::Assignment(Some(retty), Rc::new(id), Rc::new(try!(self.expression()))))
+                        Ok(Expression::Definition(Some(retty), Rc::new(id), Rc::new(try!(self.expression()))))
                     },
 
                     TokenType::Symbol => match self.traveler.current_content().as_str() {
