@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
 use super::{ParserResult, ParserError};
+use super::super::{SymTab, Env};
 
 #[derive(Debug, Clone)]
 pub enum Expression {
@@ -26,14 +27,56 @@ pub enum Expression {
     }
 }
 
+impl Expression {
+    pub fn visit(&self, sym: &Rc<SymTab>, env: &Rc<Env>) -> ParserResult<()> {
+        match *self {
+            Expression::Identifier(ref id) => match sym.get_name(&*id) {
+                Some((i, env_index)) => {
+                    println!("found thing: {} of {:?}", id, env.get_type(i, env_index));
+                    Ok(())
+                },
+                None => Err(ParserError::new(&format!("use of undeclared: {}", id))),
+            },
+
+            Expression::Assignment(ref t, ref name, ref expr) => {
+                let index = sym.add_name(name);
+                if index >= env.size() {
+                    env.grow();
+                }
+
+                let tp = match *t {
+                    Some(ref id) => id.clone(),
+                    None         => Type::Any,
+                };
+
+                if let Err(e) = env.set_type(index, 0, tp) {
+                    panic!("error setting type: {}", e)
+                }
+
+                Ok(())
+            },
+
+            ref c => Err(ParserError::new(&format!("undefined visitor: {:?}", c))),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum Statement {
     Expression(Rc<Expression>),
 }
 
+impl Statement {
+    pub fn visit(&self, sym: &Rc<SymTab>, env: &Rc<Env>) -> ParserResult<()> {
+        match *self {
+            Statement::Expression(ref e) => e.visit(sym, env),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum Type {
-    Str, Num, Bool, Any, Nil,
+    Str, Num, Bool, Any, Nil, Undefined,
 }
 
 pub fn get_type(v: &str) -> Option<Type> {
