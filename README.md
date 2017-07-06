@@ -2,6 +2,12 @@
 
 a truly *perfect* programming language with functional, rusty semantics and optional typing.
 
+## todo
+
+- implement type checking for all expressions
+
+- recursive block checking
+
 ## syntax
 based on soft shapes and nice syntax.
 

@@ -40,8 +40,15 @@ impl Expression {
             },
 
             Expression::Definition(ref t, ref name, ref expr) => {
+                try!(expr.visit(sym, env));
+
                 let tp = match *t {
-                    Some(ref id) => id.clone(),
+                    Some(ref tt) => {
+                        if *tt != try!(expr.get_type(sym, env)) {
+                            return Err(ParserError::new(&format!("right hand doesn't match type of: {}", name)))
+                        }
+                         tt.clone()
+                    },
                     None         => try!(expr.get_type(sym, env)),
                 };
 
@@ -82,6 +89,10 @@ impl Expression {
                             if index >= env.size() {
                                 env.grow();
                             }
+
+                            if let Err(e) = env.set_type(index, 0, try!(self.get_type(sym, env))) {
+                                panic!("error setting type: {}", e)
+                            }
                         },
                     }
                 }
@@ -99,7 +110,28 @@ impl Expression {
                 Ok(())
             },
 
-            ref c => Err(ParserError::new(&format!("undefined visitor: {:?}", c))),
+            Expression::Call(ref id, ref args) => {
+                match try!(id.get_type(sym, env)) {
+                    Type::Lambda(ref params) => {
+                        let mut arg_types = Vec::new();
+
+                        for arg in args.iter() {
+                            arg_types.push(try!(arg.get_type(sym, env)));
+                        }
+
+                        if params[1..].to_vec() != arg_types.as_slice() {
+                            Err(ParserError::new(&format!("can't invoke lambda with bad args!")))
+                        } else {
+                            println!("called '{:?}' with '{:?}'", id, args);
+                            Ok(())
+                        }
+                    },
+
+                    _ => Err(ParserError::new(&format!("can't call non-lambda"))),
+                }
+            }
+
+            _ => Ok(()),
         }
     }
 
@@ -115,7 +147,41 @@ impl Expression {
                 None => Err(ParserError::new(&format!("can't get type of undeclared: {}", n))),
             },
 
+            Expression::Definition(ref t, _, ref expr) => {
+                match *t {
+                    Some(ref tp) => return Ok(tp.clone()),
+                    None     => (),
+                }
 
+                Ok(try!(expr.get_type(sym, env)))
+            },
+
+            Expression::Lambda {
+                ref name, ref retty, ref param_names, ref param_types, ref body,
+            } => {
+                let mut tp = vec![retty.clone()];
+
+                for t in param_types.iter() {
+                    tp.push(t.clone())
+                }
+
+                Ok(Type::Lambda(Rc::new(tp)))
+            },
+
+            Expression::Call(ref id, ref args) => {
+                match try!(id.get_type(sym, env)) {
+                    Type::Lambda(ref params) => {
+                        Ok(params.get(0).unwrap().clone())
+                    },
+                    _ => Err(ParserError::new(&format!("can't call non-lambda"))),
+                }
+            },
+
+            Expression::Operation {
+                ref left, ref op, ref right,
+            } => {
+                
+            },
 
             _ => Ok(Type::Undefined),
         }
@@ -137,7 +203,7 @@ impl Statement {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Type {
-    Str, Num, Bool, Any, Nil, Undefined,
+    Str, Num, Bool, Any, Nil, Undefined, Lambda(Rc<Vec<Type>>),
 }
 
 pub fn get_type(v: &str) -> Option<Type> {

@@ -8,8 +8,11 @@ use std::rc::Rc;
 
 fn main() {
     let test = r#"
-a = 10
-b = "hey"
+str (str a, str b) concat = a ++ b
+
+concat "hey, ", "world"
+
+concat
     "#;
 
     let mut blocks = BlockTree::new(test, 0);
