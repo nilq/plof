@@ -74,6 +74,7 @@ impl Parser {
                         if self.traveler.current().token_type == TokenType::Symbol {
                             match self.traveler.current_content().as_str() {
                                 "(" | ")" => (),
+                                "!"       => return Ok(Expression::Call(Rc::new(id), Rc::new(vec!()))),
                                 "="       => {
                                     self.traveler.next();
 

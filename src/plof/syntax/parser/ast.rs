@@ -12,6 +12,7 @@ pub enum Expression {
     BoolLiteral(bool),
     Definition(Option<Type>, Rc<String>, Rc<Expression>),
     Call(Rc<Expression>, Rc<Vec<Expression>>),
+    Return(Option<Rc<Expression>>),
     Lambda {
         name:       Option<Rc<String>>,
         retty:      Type,
@@ -19,7 +20,6 @@ pub enum Expression {
         param_types: Vec<Type>,
         body:       Rc<Expression>,
     },
-    Nil,
     EOF,
     Operation {
         left:  Rc<Expression>,
@@ -31,6 +31,14 @@ pub enum Expression {
 impl Expression {
     pub fn visit(&self, sym: &Rc<SymTab>, env: &Rc<Env>) -> ParserResult<()> {
         match *self {
+            Expression::Block(ref statements) => {
+                for s in statements.iter() {
+                    try!(s.visit(sym, env))
+                }
+
+                Ok(())
+            },
+
             Expression::Identifier(ref id) => match sym.get_name(&*id) {
                 Some((i, env_index)) => {
                     println!("found thing: {} of {:?}", id, env.get_type(i, env_index));
@@ -100,7 +108,16 @@ impl Expression {
                 let local_sym = Rc::new(SymTab::new(sym.clone(), &param_names));
                 let local_env = Rc::new(Env::new(env.clone(), &param_types));
 
-                println!("lambda: {:?} of type {:?}:\n", name.clone().unwrap(), retty);
+                try!(body.visit(&local_sym, &local_env));
+
+                if try!(body.get_type(&local_sym, &local_env)) != *retty {
+                    match *retty {
+                        Type::Any => (),
+                        _ => return Err(ParserError::new(&format!("lambda must return return-type"))),
+                    }
+                }
+
+                println!("lambda: {:?} of type {:?}:\n", name.clone(), retty);
 
                 local_sym.visualize(1);
                 local_env.visualize(1);
@@ -137,6 +154,26 @@ impl Expression {
 
     pub fn get_type(&self, sym: &Rc<SymTab>, env: &Rc<Env>) -> ParserResult<Type> {
         match *self {
+            Expression::Block(ref statements) => {
+                for s in statements.iter() {
+                    match *s {
+                        Statement::Expression(ref e) => match **e {
+                            Expression::Return(ref ret) => match *ret {
+                                Some(ref expr) => return Ok(try!(expr.get_type(sym, env))),
+                                None => (),
+                            },
+
+                            _ => (),
+                        }
+                    }
+                }
+
+                match statements.last() {
+                    Some(e) => Ok(try!(e.get_type(sym, env))),
+                    None    => Ok(Type::Nil),
+                }
+            },
+
             Expression::NumberLiteral(_)  => Ok(Type::Num),
             Expression::StringLiteral(_)  => Ok(Type::Str),
             Expression::BoolLiteral(_)    => Ok(Type::Bool),
@@ -197,6 +234,12 @@ impl Statement {
     pub fn visit(&self, sym: &Rc<SymTab>, env: &Rc<Env>) -> ParserResult<()> {
         match *self {
             Statement::Expression(ref e) => e.visit(sym, env),
+        }
+    }
+
+    pub fn get_type(&self, sym: &Rc<SymTab>, env: &Rc<Env>) -> ParserResult<Type> {
+        match *self {
+            Statement::Expression(ref e) => e.get_type(sym, env),
         }
     }
 }

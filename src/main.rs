@@ -8,8 +8,11 @@ use std::rc::Rc;
 
 fn main() {
     let test = r#"
-a = 2 + 2
+str () a = "123"
+b = a!
+
 a
+b
     "#;
 
     let mut blocks = BlockTree::new(test, 0);
