@@ -1,0 +1,5 @@
+~ useful function, commonly used
+num (num a, num b) add =
+  a + b
+
+add 10, 10

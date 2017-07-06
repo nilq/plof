@@ -3,7 +3,9 @@ use std::rc::Rc;
 use super::{ParserResult, ParserError};
 use super::super::{SymTab, Env};
 
-#[derive(Debug, Clone)]
+use std::fmt;
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
     Block(Rc<Vec<Statement>>),
     NumberLiteral(f64),
@@ -39,8 +41,7 @@ impl Expression {
             },
 
             Expression::Identifier(ref id) => match sym.get_name(&*id) {
-                Some((i, env_index)) => {
-                    println!("found thing: {} of {:?}", id, env.get_type(i, env_index));
+                Some(_) => {
                     Ok(())
                 },
                 None => Err(ParserError::new(&format!("use of undeclared: {}", id))),
@@ -51,21 +52,19 @@ impl Expression {
 
                 let tp = match *t {
                     Some(ref tt) => {
-                        if *tt != try!(expr.get_type(sym, env)) {
-                            return Err(ParserError::new(&format!("right hand doesn't match type of: {}", name)))
+                        if *tt != try!(expr.get_type(sym, env)) && *tt != Type::Any {
+                            return Err(ParserError::new(&format!("right-hand doesn't match type of: {}", name)))
                         }
                          tt.clone()
                     },
-                    None         => try!(expr.get_type(sym, env)),
+                    None => Type::Any,
                 };
 
                 match sym.get_name(&name) {
                     Some((i, env_index)) => {
                         match env.get_type(i, env_index) {
-                            Ok(tp2)  => if tp2 != tp {
-                                println!("angery potential bad typing")
-                            } else {
-                                println!("might be okok")
+                            Ok(tp2)  => if tp2 != tp && tp2 != Type::Any{
+                                return Err(ParserError::new(&format!("can't change type of '{}'!", name)))
                             },
                             Err(e) => return Err(ParserError::new(&format!("{}", e))),
                         }
@@ -79,10 +78,10 @@ impl Expression {
                 }
 
                 if let Err(e) = env.set_type(index, 0, tp) {
-                    panic!("error setting type: {}", e)
+                    Err(ParserError::new(&format!("error setting type: {}", e)))
+                } else {
+                    Ok(())
                 }
-
-                Ok(())
             },
 
             Expression::Lambda {
@@ -118,13 +117,6 @@ impl Expression {
                     }
                 }
 
-                println!("lambda: {:?} of type {:?}:\n", name.clone(), retty);
-
-                local_sym.visualize(1);
-                local_env.visualize(1);
-
-                println!("\n");
-
                 Ok(())
             },
 
@@ -140,7 +132,6 @@ impl Expression {
                         if params[1..].to_vec() != arg_types.as_slice() {
                             Err(ParserError::new(&format!("can't invoke lambda with bad args!")))
                         } else {
-                            println!("called '{:?}' with '{:?}'", id, args);
                             Ok(())
                         }
                     },
@@ -222,9 +213,92 @@ impl Expression {
             _ => Ok(Type::Undefined),
         }
     }
+
+    pub fn translate_lua(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Expression::Block(ref statements) => {
+                for s in statements.iter() {
+                    s.translate_lua(f);
+                }
+
+                Ok(())
+            },
+            Expression::NumberLiteral(ref n) => write!(f, "{}", n),
+            Expression::StringLiteral(ref n) => write!(f, "\"{}\"", n),
+            Expression::BoolLiteral(ref n)   => write!(f, "{}", n),
+            Expression::Identifier(ref n)    => write!(f, "{}", n),
+            Expression::Definition(_, ref name, ref expr) => write!(f, "local {} = {};\n", name, expr),
+            Expression::Call(ref id, ref args) => {
+                write!(f, "{}", id);
+                write!(f, "(");
+
+                let mut acc = 1;
+                for e in args.iter() {
+                    write!(f, "({})", e);
+                    if acc != args.len() {
+                        write!(f, ",");
+                    }
+                    acc += 1;
+                }
+
+                write!(f, ");\n")
+            },
+            Expression::Lambda {
+                ref name, ref retty, ref param_names, ref param_types, ref body,
+            } => {
+                write!(f, "function ");
+                match *name {
+                    Some(ref n) => { write!(f, "{}", n); },
+                    None        => (),
+                }
+                
+                write!(f, "(");
+                
+                for e in param_names.iter() {
+                    write!(f, "{}", e);
+                    if e != param_names.last().unwrap() {
+                        write!(f, ",");
+                    }
+                }
+                
+                write!(f, ")");
+                
+                for s in body.iter() {
+                    if s == body.last().unwrap() {
+                        match *s {
+                            Statement::Expression(ref e) => { write!(f, "return ({});\n", e); },
+                            _ => { write!(f, "{}", s); },
+                        }
+                    } else {
+                        write!(f, "{}", s);
+                    }
+                }
+                
+                writeln!(f, "end")
+            },
+            
+            Expression::Operation {
+                ref left, ref op, ref right,
+            } => {
+                write!(f, "(");
+                write!(f, "({})", left);
+                write!(f, "{}", op);
+                write!(f, "({})", right);
+                write!(f, ")")
+            },
+
+            _ => Ok(()),
+        }
+    }
 }
 
-#[derive(Debug, Clone)]
+impl fmt::Display for Expression {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.translate_lua(f)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
     Expression(Rc<Expression>),
     Return(Option<Rc<Expression>>),
@@ -250,6 +324,22 @@ impl Statement {
             },
         }
     }
+
+    pub fn translate_lua(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Statement::Expression(ref e) => e.translate_lua(f),
+            Statement::Return(ref e)     => match *e {
+                Some(ref expr) => write!(f, "{}", format!("return ({});", expr)),
+                None => write!(f, "return;")
+            },
+        }
+    }
+}
+
+impl fmt::Display for Statement {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.translate_lua(f)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -268,7 +358,7 @@ pub fn get_type(v: &str) -> Option<Type> {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Operand {
     Pow,
     Mul, Div, Mod,
@@ -350,6 +440,32 @@ impl Operand {
 
             Operand::And | Operand::Or | Operand::Not => Ok(Type::Bool),
         }
+    }
+    
+    pub fn translate_lua(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Operand::Pow     => write!(f, "^"),
+            Operand::Mul     => write!(f, "*"),
+            Operand::Div     => write!(f, "/"),
+            Operand::Mod     => write!(f, "%"),
+            Operand::Add     => write!(f, "+"),
+            Operand::Sub     => write!(f, "-"),
+            Operand::Equal   => write!(f, "=="),
+            Operand::NEqual  => write!(f, "~="),
+            Operand::Lt      => write!(f, "<"),
+            Operand::Gt      => write!(f, ">"),
+            Operand::LtEqual => write!(f, "<="),
+            Operand::GtEqual => write!(f, ">="),
+            Operand::And     => write!(f, "and"),
+            Operand::Or      => write!(f, "or"),
+            Operand::Not     => write!(f, "not"),
+        }
+    }
+}
+
+impl fmt::Display for Operand {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.translate_lua(f)
     }
 }
 
