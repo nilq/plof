@@ -8,7 +8,7 @@ use std::rc::Rc;
 
 fn main() {
     let test = r#"
-str () a = "123"
+str () a = return "123"
 b = a!
 
 a

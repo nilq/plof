@@ -45,7 +45,7 @@ pub fn lexer(data: &mut Chars) -> Lexer {
     ].iter().map(|&x| x.to_string()).collect();
 
     let keywords = vec![
-        "if", "else", "elif", "unless",
+        "if", "else", "elif", "unless", "return",
     ].iter().map(|&x| x.to_string()).collect();
 
     let types = vec![

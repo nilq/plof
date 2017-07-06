@@ -34,6 +34,15 @@ impl Parser {
                 self.statement()
             },
             TokenType::Keyword => match self.traveler.current_content().as_str() {
+                "return" => {
+                    self.traveler.next();
+
+                    if self.traveler.current_content() == "\n" {
+                        Ok(Statement::Return(None))
+                    } else {
+                        Ok(Statement::Return(Some(Rc::new(try!(self.expression())))))
+                    }
+                }
                 _ => Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected: {}", self.traveler.current_content()))),
             },
             _ => Ok(Statement::Expression(Rc::new(try!(self.expression())))),
@@ -213,15 +222,14 @@ impl Parser {
 
                             self.traveler.next();
 
-                            let body: Rc<Expression>;
+                            let body: Rc<Vec<Statement>>;
 
                             match self.traveler.current_content().as_str() {
                                 "\n" => {
                                     self.traveler.next();
-                                    body = Rc::new(Expression::Block(Rc::new(try!(self.block()))));
-
+                                    body = Rc::new(try!(self.block()));
                                 },
-                                _    => body = Rc::new(try!(self.expression())),
+                                _ => body = Rc::new(vec![try!(self.statement())]),
                             }
 
                             Ok(Expression::Lambda {

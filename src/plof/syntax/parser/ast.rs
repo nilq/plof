@@ -12,13 +12,12 @@ pub enum Expression {
     BoolLiteral(bool),
     Definition(Option<Type>, Rc<String>, Rc<Expression>),
     Call(Rc<Expression>, Rc<Vec<Expression>>),
-    Return(Option<Rc<Expression>>),
     Lambda {
         name:       Option<Rc<String>>,
         retty:      Type,
         param_names: Vec<Rc<String>>,
         param_types: Vec<Type>,
-        body:       Rc<Expression>,
+        body:       Rc<Vec<Statement>>,
     },
     EOF,
     Operation {
@@ -108,12 +107,14 @@ impl Expression {
                 let local_sym = Rc::new(SymTab::new(sym.clone(), &param_names));
                 let local_env = Rc::new(Env::new(env.clone(), &param_types));
 
-                try!(body.visit(&local_sym, &local_env));
+                for statement in body.iter() {
+                    try!(statement.visit(&local_sym, &local_env));
 
-                if try!(body.get_type(&local_sym, &local_env)) != *retty {
-                    match *retty {
-                        Type::Any => (),
-                        _ => return Err(ParserError::new(&format!("lambda must return return-type"))),
+                    if try!(statement.get_type(&local_sym, &local_env)) != *retty {
+                        match *retty {
+                            Type::Any => (),
+                            _ => return Err(ParserError::new(&format!("lambda must return return-type"))),
+                        }
                     }
                 }
 
@@ -157,14 +158,12 @@ impl Expression {
             Expression::Block(ref statements) => {
                 for s in statements.iter() {
                     match *s {
-                        Statement::Expression(ref e) => match **e {
-                            Expression::Return(ref ret) => match *ret {
-                                Some(ref expr) => return Ok(try!(expr.get_type(sym, env))),
-                                None => (),
-                            },
+                        Statement::Return(ref ret) => match *ret {
+                            Some(ref expr) => return Ok(try!(expr.get_type(sym, env))),
+                            None => (),
+                        },
 
-                            _ => (),
-                        }
+                        _ => (),
                     }
                 }
 
@@ -228,18 +227,27 @@ impl Expression {
 #[derive(Debug, Clone)]
 pub enum Statement {
     Expression(Rc<Expression>),
+    Return(Option<Rc<Expression>>),
 }
 
 impl Statement {
     pub fn visit(&self, sym: &Rc<SymTab>, env: &Rc<Env>) -> ParserResult<()> {
         match *self {
             Statement::Expression(ref e) => e.visit(sym, env),
+            Statement::Return(ref e) => match *e {
+                Some(ref expr) => expr.visit(sym, env),
+                None           => Ok(()),
+            },
         }
     }
 
     pub fn get_type(&self, sym: &Rc<SymTab>, env: &Rc<Env>) -> ParserResult<Type> {
         match *self {
             Statement::Expression(ref e) => e.get_type(sym, env),
+            Statement::Return(ref e) => match *e {
+                Some(ref expr) => expr.get_type(sym, env),
+                None           => Ok(Type::Nil),
+            },
         }
     }
 }
