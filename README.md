@@ -1,92 +1,46 @@
-# the plof language
+## plof language
 
-a truly *perfect* programming language with functional, rusty semantics and optional typing.
+an optional typed programming language powered by rust, transpiled to lua(for now). inspired by functional concepts and pure-language syntax semantics, plof is aimed at being easy to use and read.
 
-## todo
+### syntax
 
-- implement type checking for all expressions
+plof is designed with soft shapes and neat structure in mind - sike.
 
-- recursive block checking
+#### example
 
-## syntax
-based on soft shapes and nice syntax.
-
-the hello
+high order
 ```
-say 'hey world'
-```
+apply = any (f, a) = f a
 
-### literals
+num (num a) add10 =
+  a + 10
 
-str
-```
-"hey"
-r"raw hey"
+twenty = apply add10, 10
 ```
 
-num
-```
-123
-+123
--123
-
-0.123
-.123
-+0.123
--0.123
-+.123
--.123
-```
-
-bool
-```
-true
-false
-```
-
-identifiers
-`a-z A-Z 0-9 _?@'`
-```
-jumpin?
-bob@gmail123
-foo
-bar
-```
-
-### functions
-`type ([type? id]*) name? =`
-
+function/lambda
 ```
 str (str name) greet =
-  say "yes hello, " ++ name
+  say "yes hello, " + name
+
+greet' = str (str name) =
+  say "yes hello, " + name
 ```
 
-parralel definition
+call
 ```
-num (num a, num b) add = a + b
-num (num a, b)     add = a + tonum b
-```
-
-gross haskell stuff
-```
-num (1)     fib = 1
-num (2)     fib = 2
-num (num a) fib = (fib a - 1) + fib a - 2
+foo 1, 2, 3
+foo (1 + 0), 2, 3
 ```
 
-partly applied functions
+vars
 ```
-num (num a, num b) add =
-  a + b
+a = 123
+a = "new type"
 
-add10 = add 10
-a     = add10 20 ~ 'a' is 30
-```
+str b = "string here"
+b = "strong type, can't mutate type"
 
-higher order functions
-```
-any (fun f, any a) apply = f a
-
-b = apply (num (a) = a + 10), 10
-say b
+~ assignment chain
+num c = num d = 123
 ```
