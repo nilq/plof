@@ -62,12 +62,15 @@ fn file(path: &str) {
     let mut file = match File::open(&path) {
         Err(why) => panic!("failed to open {}: {}", display, why.description()),
         Ok(file) => file,
-    };
-    
+    };    
+
     let mut s = String::new();
+        
     match file.read_to_string(&mut s) {
         Err(why) => panic!("failed to read {}: {}", display,  why.description()),
         Ok(_)    => {
+            println!("building: {}", display);
+            
             let mut blocks = BlockTree::new(&s, 0);
             let indents    = blocks.indents();
 
@@ -78,12 +81,12 @@ fn file(path: &str) {
 
             let symtab = Rc::new(syntax::SymTab::new_global());
             let env    = Rc::new(syntax::Env::new_global());
-            
+
             add_lua_standard(&symtab, &env);
-            
+
             match parser.parse() {
                 Err(why)  => println!("error: {}", why),
-                Ok(stuff) => {
+                Ok(stuff) => {                    
                     for s in stuff.iter() {
                         match s.visit(&symtab, &env) {
                             Ok(()) => (),

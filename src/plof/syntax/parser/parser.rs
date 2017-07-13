@@ -27,6 +27,14 @@ impl Parser {
         Ok(stack)
     }
 
+    pub fn skip_white(&mut self) -> ParserResult<()> {
+        while self.traveler.current_content() == "\n" || self.traveler.current_content() == " " {
+            self.traveler.next();
+        }
+        
+        Ok(())
+    }
+
     pub fn statement(&mut self) -> ParserResult<Statement> {
         match self.traveler.current().token_type {
             TokenType::EOL => {
@@ -112,7 +120,8 @@ impl Parser {
                 "(" => {
                     self.traveler.next();
                     let expr = try!(self.expression());
-                    self.traveler.prev();
+                    self.traveler.next();
+                    self.skip_white();
                     try!(self.traveler.expect_content(")"));
 
                     self.traveler.next();
@@ -248,7 +257,7 @@ impl Parser {
                 }
             },
 
-            _ => Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected: {}", self.traveler.current_content()))),
+            _ => Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected: {:#?}", self.traveler.current()))),
         }
     }
 

@@ -41,6 +41,8 @@ impl Branch {
 pub struct BlockTree<'a> {
     source: &'a str,
     current_line: usize,
+    inside: i32,
+    inside_brace: i32,
 }
 
 #[allow(dead_code)]
@@ -49,10 +51,12 @@ impl<'a> BlockTree<'a> {
         BlockTree {
             source,
             current_line,
+            inside: 0,
+            inside_brace: 0,
         }
     }
 
-    pub fn indents(&self) -> Vec<(usize, &'a str)> {
+    pub fn indents(&mut self) -> Vec<(usize, &'a str)> {
         let mut indents = Vec::new();
         let mut lines   = self.source.lines();
         while let Some(line) = lines.next() {
@@ -67,16 +71,31 @@ impl<'a> BlockTree<'a> {
         indents
     }
 
-    pub fn indent(&self, line: &str) -> usize {
+    pub fn indent(&mut self, line: &str) -> usize {
         let mut pos: usize = 0;
         for c in line.chars() {
             match c {
+                '{' => self.inside_brace += 1,
+                '}' => self.inside_brace -= 1,
+                '(' => self.inside += 1,
+                ')' => self.inside -= 1,
+                _ => (),
+            }
+        }
+
+        for c in line.chars() {
+            match c {
                 ' ' | '\t' => {
+                    if self.inside > 0 || self.inside_brace > 0 {
+                        continue
+                    }
+
                     pos += 1
                 }
                 _ => break,
             }
         }
+        
         pos
     }
 

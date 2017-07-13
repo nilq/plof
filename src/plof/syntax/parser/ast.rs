@@ -136,7 +136,9 @@ impl Expression {
                         }
                     },
 
-                    _ => Err(ParserError::new(&format!("can't call non-lambda"))),
+                    Type::Any => Ok(()),
+
+                    _ => Err(ParserError::new(&format!("can't call non-lambda: {}", id))),
                 }
             }
 
@@ -200,7 +202,8 @@ impl Expression {
                     Type::Lambda(ref params) => {
                         Ok(params.get(0).unwrap().clone())
                     },
-                    _ => Err(ParserError::new(&format!("can't call non-lambda"))),
+                    Type::Any => Ok(Type::Any),
+                    _ => Err(ParserError::new(&format!("can't call non-lambda: {}", id))),
                 }
             },
 
@@ -241,7 +244,7 @@ impl Expression {
                     acc += 1;
                 }
 
-                write!(f, ");\n")
+                write!(f, ")")
             },
             Expression::Lambda {
                 ref name, ref retty, ref param_names, ref param_types, ref body,
@@ -302,6 +305,7 @@ impl fmt::Display for Expression {
 pub enum Statement {
     Expression(Rc<Expression>),
     Return(Option<Rc<Expression>>),
+    If(Rc<Expression>, Rc<Vec<Statement>>, Rc<Vec<Statement>>),
 }
 
 impl Statement {
@@ -312,6 +316,7 @@ impl Statement {
                 Some(ref expr) => expr.visit(sym, env),
                 None           => Ok(()),
             },
+            _ => Err(ParserError::new("unimplemented visitor"))
         }
     }
 
@@ -322,6 +327,7 @@ impl Statement {
                 Some(ref expr) => expr.get_type(sym, env),
                 None           => Ok(Type::Nil),
             },
+            _ => Err(ParserError::new("unimplemented visitor"))
         }
     }
 
@@ -332,6 +338,7 @@ impl Statement {
                 Some(ref expr) => write!(f, "{}", format!("return ({});", expr)),
                 None => write!(f, "return;")
             },
+            _ => Ok(()),
         }
     }
 }

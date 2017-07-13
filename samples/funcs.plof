@@ -1,5 +1,5 @@
 ~ useful function, commonly used
-num (num a, num b) add =
+add = num (num a, num b) =
   a + b
 
-add 10, 10
+print add 10, 10

@@ -1,3 +1,4 @@
-function add(a,b)return (((a)+(b)));
+local add = function (a,b)return (((a)+(b)));
 end
-add((10),(10));
+;
+print((add((10),(10))))
