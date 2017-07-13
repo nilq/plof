@@ -107,7 +107,10 @@ fn file(path: &str) {
                     let split: Vec<&str> = split_name.collect();
                     
                     let parent_path = match path.parent() {
-                        Some(p) => p.file_name().unwrap().to_str().unwrap(),
+                        Some(p) => match p.file_name() {
+                            Some(path) => path.to_str().unwrap(),
+                            None       => ".",
+                        },
                         None    => ".",
                     };
 

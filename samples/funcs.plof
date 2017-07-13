@@ -1,4 +1,3 @@
-~ useful function, commonly used
 add = num (num a, num b) =
   a + b
 

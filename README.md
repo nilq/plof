@@ -8,6 +8,11 @@ plof is designed with soft shapes and neat structure in mind - sike.
 
 #### example
 
+comments
+```
+~ single line only
+```
+
 high order
 ```
 apply = any (f, a) = f a
@@ -36,11 +41,20 @@ foo (1 + 0), 2, 3
 vars
 ```
 a = 123
-a = "new type"
+a = \
+  "new type"
 
 str b = "string here"
 b = "strong type, can't mutate type"
 
 ~ assignment chain
 num c = num d = 123
+```
+
+tables
+```
+table a = [
+  num a: 123
+  str b: "2"
+]
 ```
