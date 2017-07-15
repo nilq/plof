@@ -1,6 +1,5 @@
-add = num (num a, num b) =
-  a + b
+add = num (num a, num b) = a + b
 
-num (num a, num b) a = 10
-
-print add 10, 10
+num (any a) =
+  ba = 123
+  123

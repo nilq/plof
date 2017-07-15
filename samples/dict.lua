@@ -1,1 +1,1 @@
-local a = ;
+local a = {b = "123",};

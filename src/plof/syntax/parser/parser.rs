@@ -146,8 +146,6 @@ impl Parser {
                     
                     self.traveler.next(); // "]"
                     
-                    println!("body: {:#?}", body);
-                    
                     Ok(Expression::DictLiteral(Rc::new(body)))
                 },
 

@@ -49,15 +49,63 @@ impl Expression {
                 None => Err(ParserError::new(&format!("use of undeclared: {}", id))),
             },
 
+            Expression::DictLiteral(ref body) => {
+                let local_sym = Rc::new(SymTab::new(sym.clone(), &vec!()));
+                let local_env = Rc::new(Env::new(env.clone(), &vec!()));
+
+                for s in body.iter() {
+                    try!(s.visit(&local_sym, &local_env))
+                }
+
+                Ok(())
+            },
+            
+            Expression::Key(ref t, ref name, ref expr) => {
+                expr.visit(sym, env)?;
+                
+                let tp = match *t {
+                    Some(ref tt) => {
+                        if !tt.compare(&expr.get_type(sym, env)?) {
+                            return Err(ParserError::new(&format!("right-hand doesn't match type of: {}", name)))
+                        }
+                        tt.clone()
+                    },
+                    None => Type::Any,
+                };
+                
+                match sym.get_name(&name) {
+                    Some((i, env_index)) => {
+                        match env.get_type(i, env_index) {
+                            Ok(tp2) => if !tp2.compare(&tp) {
+                                return Err(ParserError::new(&format!("can't change type of '{}'!", name)))
+                            },
+                            Err(e) => return Err(ParserError::new(&format!("{}", e))),
+                        }
+                    },
+                    None => (),
+                }
+
+                let index = sym.add_name(name);
+                if index >= env.size() {
+                    env.grow();
+                }
+
+                if let Err(e) = env.set_type(index, 0, tp) {
+                    Err(ParserError::new(&format!("error setting type: {}", e)))
+                } else {
+                    Ok(())
+                }
+            },
+
             Expression::Definition(ref t, ref name, ref expr) => {
-                try!(expr.visit(sym, env));
+                expr.visit(sym, env)?;
 
                 let tp = match *t {
                     Some(ref tt) => {
-                        if *tt != try!(expr.get_type(sym, env)) && *tt != Type::Any {
+                        if tt.compare(&expr.get_type(sym, env)?) {
                             return Err(ParserError::new(&format!("right-hand doesn't match type of: {}", name)))
                         }
-                         tt.clone()
+                        tt.clone()
                     },
                     None => Type::Any,
                 };
@@ -65,7 +113,7 @@ impl Expression {
                 match sym.get_name(&name) {
                     Some((i, env_index)) => {
                         match env.get_type(i, env_index) {
-                            Ok(tp2)  => if tp2 != tp && tp2 != Type::Any{
+                            Ok(tp2) => if tp2.compare(&tp) {
                                 return Err(ParserError::new(&format!("can't change type of '{}'!", name)))
                             },
                             Err(e) => return Err(ParserError::new(&format!("{}", e))),
@@ -237,7 +285,7 @@ impl Expression {
         match *self {
             Expression::Block(ref statements) => {
                 for s in statements.iter() {
-                    s.translate_lua(f);
+                    s.translate_lua(f)?;
                 }
 
                 Ok(())
@@ -246,16 +294,26 @@ impl Expression {
             Expression::StringLiteral(ref n) => write!(f, "\"{}\"", n),
             Expression::BoolLiteral(ref n)   => write!(f, "{}", n),
             Expression::Identifier(ref n)    => write!(f, "{}", n),
-            Expression::Definition(_, ref name, ref expr) => write!(f, "local {} = {};\n", name, expr),
+            Expression::Definition(_, ref name, ref expr) => writeln!(f, "local {} = {};", name, expr),
+            Expression::Key(_, ref name, ref expr)        => write!(f, "{} = {}", name, expr),
+            Expression::DictLiteral(ref body)  => {
+                write!(f, "{{")?;
+                
+                for e in body.iter() {
+                    write!(f, "{},", e)?;
+                }
+                
+                write!(f, "}}")
+            },
             Expression::Call(ref id, ref args) => {
-                write!(f, "{}", id);
-                write!(f, "(");
+                write!(f, "{}", id)?;
+                write!(f, "(")?;
 
                 let mut acc = 1;
                 for e in args.iter() {
-                    write!(f, "({})", e);
+                    write!(f, "({})", e)?;
                     if acc != args.len() {
-                        write!(f, ",");
+                        write!(f, ",")?;
                     }
                     acc += 1;
                 }
@@ -265,35 +323,35 @@ impl Expression {
             Expression::Lambda {
                 ref name, ref retty, ref param_names, ref param_types, ref body,
             } => {
-                write!(f, "function ");
+                write!(f, "function ")?;
                 match *name {
-                    Some(ref n) => { write!(f, "{}", n); },
+                    Some(ref n) => { write!(f, "{}", n)?; },
                     None        => (),
                 }
                 
-                write!(f, "(");
+                write!(f, "(")?;
                 
                 for e in param_names.iter() {
-                    write!(f, "{}", e);
+                    write!(f, "{}", e)?;
                     if e != param_names.last().unwrap() {
-                        write!(f, ",");
+                        write!(f, ",")?;
                     }
                 }
                 
-                write!(f, ")");
+                write!(f, ")")?;
                 
                 for s in body.iter() {
                     if s == body.last().unwrap() {
                         match *s {
-                            Statement::Expression(ref e) => { write!(f, "return ({});\n", e); },
-                            _ => { write!(f, "{}", s); },
+                            Statement::Expression(ref e) => { write!(f, "return ({});\n", e)?; },
+                            _ => { write!(f, "{}", s)?; },
                         }
                     } else {
-                        write!(f, "{}", s);
+                        write!(f, "{}", s)?;
                     }
                 }
                 
-                writeln!(f, "end")
+                write!(f, "end")
             },
             
             Expression::Operation {
