@@ -191,8 +191,6 @@ impl Parser {
                             while self.traveler.current_content() != ")" {
                                 let mut t: Type = Type::Any;
                                 
-                                let mut many = false;
-
                                 match self.traveler.current().token_type {
                                     TokenType::Type => {
                                         t = get_type(&self.traveler.current_content()).unwrap();
@@ -200,15 +198,9 @@ impl Parser {
                                     },
 
                                     TokenType::Identifier => (),
-
+                                    
                                     TokenType::Symbol => match self.traveler.current_content().as_str() {
-                                        ","   => (),
-                                        "..." => {
-                                            t    = Type::Many(Rc::new(t));
-                                            many = true;
-
-                                            self.traveler.next();
-                                        },
+                                        "," | "..." => (),
                                         _ => return Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected: {}", self.traveler.current_content()))),
                                     },
 
@@ -218,15 +210,14 @@ impl Parser {
                                 if self.traveler.current_content() == "," {
                                     self.traveler.next();
                                 } else {
-                                    if many {
-                                        param_names.push(Rc::new("...".to_owned()));
+                                    if self.traveler.current_content() == "..." {
+                                        t = Type::Many(Rc::new(t));
+                                        self.traveler.next();
                                     } else {
-                                        if self.traveler.current_content() != "..." {
-                                            let id = Rc::new(try!(self.traveler.expect(TokenType::Identifier)));
-                                            self.traveler.next();
+                                        let id = Rc::new(try!(self.traveler.expect(TokenType::Identifier)));
+                                        self.traveler.next();
 
-                                            param_names.push(id);
-                                        }
+                                        param_names.push(id);
                                     }
                                     
                                     param_types.push(t);

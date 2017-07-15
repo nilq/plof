@@ -1,3 +1,3 @@
-function idk(a,...)return (((a)+(10)));
+function idk(a)return (((a)+(10)));
 end
-idk((1),(1),(1),(2),(3))
+print((idk((1))))

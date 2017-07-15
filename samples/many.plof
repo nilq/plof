@@ -1,4 +1,4 @@
 any (num a, ...) idk =
   a + 10
 
-idk 1, 1, 1, 2, 3
+print idk 1
