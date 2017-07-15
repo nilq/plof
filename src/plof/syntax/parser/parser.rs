@@ -28,7 +28,7 @@ impl Parser {
     }
 
     pub fn skip_white(&mut self) -> ParserResult<()> {
-        while self.traveler.current_content() == "\n" || self.traveler.current_content() == " " {
+        while self.traveler.current_content() == "\n" || self.traveler.current().token_type == TokenType::EOL {
             self.traveler.next();
         }
         
@@ -94,10 +94,21 @@ impl Parser {
                                 "!"       => return Ok(Expression::Call(Rc::new(id), Rc::new(vec!()))),
                                 "="       => {
                                     self.traveler.next();
+                                    let expr = self.expression()?;
+                                    self.traveler.next();
 
-                                    return Ok(Expression::Definition(None, name, Rc::new(try!(self.expression()))))
+                                    return Ok(Expression::Definition(None, name, Rc::new(expr)))
                                 },
-                                _   => return Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected here: {}", self.traveler.current_content()))),
+                                ":"       => {
+                                    self.traveler.next();
+                                    let expr = self.expression()?;
+                                    println!("found in key: {}", self.traveler.current_content());
+
+                                    self.traveler.next();
+
+                                    return Ok(Expression::Key(None, name, Rc::new(expr)))
+                                }
+                                _   => return Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected: {}", self.traveler.current_content()))),
                             }
                         }
 
@@ -117,12 +128,35 @@ impl Parser {
             },
 
             TokenType::Symbol => match self.traveler.current_content().as_str() {
+                "[" => {
+                    self.traveler.next();
+                    
+                    let mut body = Vec::new();
+                    
+                    while self.traveler.current_content() != "]" {
+                        body.push(self.expression()?);
+                        self.traveler.next();
+                        
+                        if self.traveler.current_content() == "," {
+                            self.traveler.next();
+                        }
+                        
+                        self.skip_white()?;
+                    }
+                    
+                    self.traveler.next(); // "]"
+                    
+                    println!("body: {:#?}", body);
+                    
+                    Ok(Expression::DictLiteral(Rc::new(body)))
+                },
+
                 "(" => {
                     self.traveler.next();
-                    let expr = try!(self.expression());
+                    let expr = self.expression()?;
                     self.traveler.next();
-                    self.skip_white();
-                    try!(self.traveler.expect_content(")"));
+                    self.skip_white()?;
+                    self.traveler.expect_content(")")?;
 
                     self.traveler.next();
 
@@ -174,11 +208,23 @@ impl Parser {
 
                         self.traveler.next();
 
-                        try!(self.traveler.expect_content("="));
+                        if self.traveler.current_content() == "=" {
+                            self.traveler.next();
+                            
+                            let expr = self.expression()?;
+                            self.traveler.next();
 
-                        self.traveler.next();
+                            Ok(Expression::Definition(Some(retty), Rc::new(id), Rc::new(expr)))
+                        } else if self.traveler.current_content() == ":" {
+                            self.traveler.next();
+                            
+                            let expr = self.expression()?;
+                            self.traveler.next();
 
-                        Ok(Expression::Definition(Some(retty), Rc::new(id), Rc::new(try!(self.expression()))))
+                            Ok(Expression::Key(Some(retty), Rc::new(id), Rc::new(expr)))
+                        } else {
+                            Err(ParserError::new_pos(self.traveler.current().position, &format!("expected '=' or ':', found: {}", self.traveler.current_content())))
+                        }
                     },
 
                     TokenType::Symbol => match self.traveler.current_content().as_str() {

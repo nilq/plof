@@ -12,7 +12,9 @@ pub enum Expression {
     StringLiteral(Rc<String>),
     Identifier(Rc<String>),
     BoolLiteral(bool),
+    DictLiteral(Rc<Vec<Expression>>),
     Definition(Option<Type>, Rc<String>, Rc<Expression>),
+    Key(Option<Type>, Rc<String>, Rc<Expression>),
     Call(Rc<Expression>, Rc<Vec<Expression>>),
     Lambda {
         name:       Option<Rc<String>>,

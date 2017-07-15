@@ -75,8 +75,8 @@ impl<'a> BlockTree<'a> {
         let mut pos: usize = 0;
         for c in line.chars() {
             match c {
-                '{' => self.inside_brace += 1,
-                '}' => self.inside_brace -= 1,
+                '[' => self.inside_brace += 1,
+                ']' => self.inside_brace -= 1,
                 '(' => self.inside += 1,
                 ')' => self.inside -= 1,
                 _ => (),
