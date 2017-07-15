@@ -187,9 +187,11 @@ impl Parser {
 
                             let mut param_names = Vec::new();
                             let mut param_types = Vec::new();
-
+                            
                             while self.traveler.current_content() != ")" {
                                 let mut t: Type = Type::Any;
+                                
+                                let mut many = false;
 
                                 match self.traveler.current().token_type {
                                     TokenType::Type => {
@@ -200,8 +202,14 @@ impl Parser {
                                     TokenType::Identifier => (),
 
                                     TokenType::Symbol => match self.traveler.current_content().as_str() {
-                                        "," => (),
-                                        _   => return Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected: {}", self.traveler.current_content()))),
+                                        ","   => (),
+                                        "..." => {
+                                            t    = Type::Many(Rc::new(t));
+                                            many = true;
+
+                                            self.traveler.next();
+                                        },
+                                        _ => return Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected: {}", self.traveler.current_content()))),
                                     },
 
                                     _ => return Err(ParserError::new_pos(self.traveler.current().position, &format!("unexpected: {}", self.traveler.current_content()))),
@@ -210,10 +218,17 @@ impl Parser {
                                 if self.traveler.current_content() == "," {
                                     self.traveler.next();
                                 } else {
-                                    let id = Rc::new(try!(self.traveler.expect(TokenType::Identifier)));
-                                    self.traveler.next();
+                                    if many {
+                                        param_names.push(Rc::new("...".to_owned()));
+                                    } else {
+                                        if self.traveler.current_content() != "..." {
+                                            let id = Rc::new(try!(self.traveler.expect(TokenType::Identifier)));
+                                            self.traveler.next();
 
-                                    param_names.push(id);
+                                            param_names.push(id);
+                                        }
+                                    }
+                                    
                                     param_types.push(t);
                                 }
                             }

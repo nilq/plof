@@ -22,6 +22,7 @@ pub fn lexer(data: &mut Chars) -> Lexer {
         "!",
         "|",
         "=",
+        "...",
         ".",
     ].iter().map(|&x| x.to_string()).collect();
 
@@ -69,12 +70,12 @@ pub fn lexer(data: &mut Chars) -> Lexer {
     let matcher_string_literal = StringLiteralMatcher {};
 
     lexer.matchers_mut().push(Rc::new(matcher_whitespace));
+    lexer.matchers_mut().push(Rc::new(matcher_symbol));
     lexer.matchers_mut().push(Rc::new(matcher_float_literal));
     lexer.matchers_mut().push(Rc::new(matcher_int_literal));
     lexer.matchers_mut().push(Rc::new(matcher_string_literal));
     lexer.matchers_mut().push(Rc::new(matcher_types));
     lexer.matchers_mut().push(Rc::new(matcher_operator));
-    lexer.matchers_mut().push(Rc::new(matcher_symbol));
     lexer.matchers_mut().push(Rc::new(matcher_boolean));
     lexer.matchers_mut().push(Rc::new(matcher_keyword));
     lexer.matchers_mut().push(Rc::new(matcher_identifier));

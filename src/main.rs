@@ -7,7 +7,6 @@ use syntax::{SymTab, Env};
 
 use std::rc::Rc;
 
-use std::io;
 use std::io::prelude::*;
 use std::error::Error;
 

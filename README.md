@@ -41,8 +41,7 @@ foo (1 + 0), 2, 3
 vars
 ```
 a = 123
-a = \
-  "new type"
+a = "new type"
 
 str b = "string here"
 b = "strong type, can't mutate type"

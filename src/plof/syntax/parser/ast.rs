@@ -129,10 +129,24 @@ impl Expression {
                             arg_types.push(try!(arg.get_type(sym, env)));
                         }
 
-                        if params[1..].to_vec() != arg_types.as_slice() {
-                            Err(ParserError::new(&format!("can't invoke lambda with bad args!")))
-                        } else {
-                            Ok(())
+                        match params[params.len() - 1] {
+                            Type::Many(ref t) => {
+                                if params[1..params.len() - 1].to_vec() != arg_types.as_slice()[1 .. params.len() - 1].to_vec() {
+                                    Err(ParserError::new(&format!("can't invoke lambda with bad args!")))
+                                } else {
+                                    for arg_t in arg_types[params.len() - 1 ..].iter() {
+                                        if !arg_t.compare(&**t) {
+                                            return Err(ParserError::new(&format!("expected '{:?}' found '{:?}'", t, arg_t)))
+                                        }
+                                    }
+                                    Ok(())
+                                }
+                            },
+                            _ => if params[1..].to_vec() != arg_types.as_slice() {
+                                Err(ParserError::new(&format!("can't invoke lambda with bad args!")))
+                            } else {
+                                Ok(())
+                            },
                         }
                     },
 
@@ -305,7 +319,6 @@ impl fmt::Display for Expression {
 pub enum Statement {
     Expression(Rc<Expression>),
     Return(Option<Rc<Expression>>),
-    If(Rc<Expression>, Rc<Vec<Statement>>, Rc<Vec<Statement>>),
 }
 
 impl Statement {
@@ -351,7 +364,17 @@ impl fmt::Display for Statement {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Type {
-    Str, Num, Bool, Any, Nil, Undefined, Lambda(Rc<Vec<Type>>),
+    Str, Num, Bool, Any, Nil, Undefined, Lambda(Rc<Vec<Type>>), Many(Rc<Type>),
+}
+
+impl Type {
+    pub fn compare(&self, other: &Type) -> bool {
+        if self == &Type::Any || other == &Type::Any {
+            true
+        } else {
+            self == other
+        }
+    }
 }
 
 pub fn get_type(v: &str) -> Option<Type> {
@@ -448,7 +471,7 @@ impl Operand {
             Operand::And | Operand::Or | Operand::Not => Ok(Type::Bool),
         }
     }
-    
+
     pub fn translate_lua(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Operand::Pow     => write!(f, "^"),
