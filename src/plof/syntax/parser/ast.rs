@@ -113,7 +113,7 @@ impl Expression {
                 match sym.get_name(&name) {
                     Some((i, env_index)) => {
                         match env.get_type(i, env_index) {
-                            Ok(tp2) => if tp2.compare(&tp) {
+                            Ok(tp2) => if !tp2.compare(&tp) {
                                 return Err(ParserError::new(&format!("can't change type of '{}'!", name)))
                             },
                             Err(e) => return Err(ParserError::new(&format!("{}", e))),

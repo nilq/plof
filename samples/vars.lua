@@ -1,3 +1,3 @@
 local a = 123;
-local a = "hey";
+local a = 321;
 print((a))
